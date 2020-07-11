@@ -194,9 +194,10 @@ renderOp pOp = stack $
     n' = n <> "'"
     listSizeAttrs = inferredListSizeAttrs pOp
     args = sep $ "op'options"
-               : (map renderHaskellName
-                    $ map attrName (explicitInputAttrs pOp)
-                    ++ map parsedArgName (parsedInputs pOp))
+          : map
+              renderHaskellName
+              (map attrName (explicitInputAttrs pOp)
+                ++ map parsedArgName (parsedInputs pOp))
     haddocks = "-- |" <+> multilineComment (parsedOpSummary pOp) (parsedOpDescription pOp)
 
 -- | A check that all lists of the given size have the given length.
@@ -249,7 +250,7 @@ functionBody pOp
         ]
     opInputsVar = "op'inputs"
     bindOpInputsVar = opInputsVar <+> "<- fmap Prelude.concat $ Prelude.sequence"
-                            <+> brackets (commasep $ map (\a -> "buildInputs" <+> a) tensorArgs)
+                            <+> brackets (commasep $ map ("buildInputs" <+>) tensorArgs)
     opDef = parens $ hang 0 $ stack $
         "opDef" <+> renderQuotedTFName (parsedOpName pOp) :
         -- Renders type parameter arguments.
@@ -302,7 +303,7 @@ typeSig pre pOp = constraints
     typeParams = [strictText v | k <- parsedInputs pOp ++ parsedOutputs pOp,
                   ArgSomeTensor v <- [argKind $ parsedArgCase k]]
                 ++ [renderHaskellAttrName n | n <- inferredTypeAttrs pOp]
-                ++ if parsedOpIsMonadic pOp then ["m'"] else []
+                ++ (["m'" | parsedOpIsMonadic pOp])
     -- Use m' as the type parameter to avoid clashing with an attribute name.
     monadConstraint
         | parsedOpIsMonadic pOp = ["MonadBuild m'"]
